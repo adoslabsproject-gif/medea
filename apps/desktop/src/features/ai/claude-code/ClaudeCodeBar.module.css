@@ -1,0 +1,65 @@
+@layer features {
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding-block-end: var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  .campo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .etichetta {
+    color: var(--color-text-muted);
+  }
+
+  .select,
+  .cartella,
+  .togli,
+  .ferma {
+    font: inherit;
+    color: var(--color-text-primary);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .cartella,
+  .togli,
+  .ferma {
+    cursor: pointer;
+  }
+
+  .cartella {
+    max-inline-size: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ferma {
+    margin-inline-start: auto;
+    border-color: var(--color-feedback-danger);
+    color: var(--color-feedback-danger);
+  }
+
+  .select:focus-visible,
+  .cartella:focus-visible,
+  .togli:focus-visible,
+  .ferma:focus-visible {
+    outline: 2px solid var(--color-accent-default);
+    outline-offset: 2px;
+  }
+
+  .errore {
+    color: var(--color-feedback-danger);
+  }
+}

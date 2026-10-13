@@ -10,7 +10,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { leggiTurnoCli, promptPerCli, type ClaudeCliTurn } from './claude-cli-turn';
+import {
+  leggiTurnoCli,
+  promptPerCli,
+  ultimoMessaggio,
+  type ClaudeCliTurn,
+} from './claude-cli-turn';
 import type { ToolDescriptor } from './tools';
 
 const ADESSO = '2026-10-11T09:00:00.000Z';
@@ -26,8 +31,16 @@ const REGISTRO = [
   strumento('customer_update', 'sensitive'),
 ];
 
-function turno(toolCalls: ClaudeCliTurn['toolCalls']): ClaudeCliTurn {
-  return { text: 'Fatto.', toolCalls, usage: null };
+type Chiamata = ClaudeCliTurn['toolCalls'][number];
+
+/** Un turno di prova. Salvo diversa indicazione, gli strumenti sono di Medea. */
+function turno(toolCalls: (Omit<Chiamata, 'diMedea'> & { diMedea?: boolean })[]): ClaudeCliTurn {
+  return {
+    text: 'Fatto.',
+    toolCalls: toolCalls.map((c) => ({ diMedea: true, ...c })),
+    usage: null,
+    sessionId: null,
+  };
 }
 
 describe('leggiTurnoCli — strumenti già eseguiti dalla CLI', () => {
@@ -210,6 +223,91 @@ describe('leggiTurnoCli — quello che spetta all’utente', () => {
     expect(letto.eseguiti).toHaveLength(1);
     expect(letto.daConfermare).toEqual([]);
     expect(letto.daPreparare).toEqual([]);
+  });
+});
+
+describe('leggiTurnoCli — gli strumenti di Claude Code', () => {
+  /**
+   * Un comando di shell o una modifica di file li ha già eseguiti la CLI,
+   * dopo aver chiesto il permesso nel pannello. Medea li mostra e basta.
+   */
+  it('si mostrano com’erano, con il loro esito', () => {
+    const letto = leggiTurnoCli(
+      turno([
+        {
+          id: 'b1',
+          name: 'Bash',
+          diMedea: false,
+          arguments: { command: 'ls' },
+          output: 'a.txt\nb.txt',
+          isError: false,
+        },
+        {
+          id: 'b2',
+          name: 'Write',
+          diMedea: false,
+          arguments: { file_path: '/x' },
+          output: "L'utente ha negato il permesso.",
+          isError: true,
+        },
+      ]),
+      REGISTRO,
+      ADESSO,
+    );
+
+    expect(letto.eseguiti.map((r) => r.call.name)).toEqual(['Bash', 'Write']);
+    expect(letto.eseguiti[0]?.result).toBe('a.txt\nb.txt');
+    expect(letto.eseguiti[1]?.error).toContain('negato');
+  });
+
+  /**
+   * Il nome non basta a dire di chi è uno strumento: un plugin dell'utente
+   * può chiamare il suo `customer_update`. Rieseguirlo come se fosse quello
+   * di Medea modificherebbe un cliente che nessuno ha chiesto di toccare.
+   */
+  it('uno strumento altrui con il nome di uno di Medea non viene trattato come suo', () => {
+    const letto = leggiTurnoCli(
+      turno([
+        {
+          id: 'x1',
+          name: 'customer_update',
+          diMedea: false,
+          arguments: { id: 7 },
+          output: 'fatto altrove',
+          isError: false,
+        },
+        {
+          id: 'x2',
+          name: 'email_draft',
+          diMedea: false,
+          arguments: {},
+          output: 'bozza altrui',
+          isError: false,
+        },
+      ]),
+      REGISTRO,
+      ADESSO,
+    );
+
+    expect(letto.daConfermare).toEqual([]);
+    expect(letto.daPreparare).toEqual([]);
+    expect(letto.eseguiti).toHaveLength(2);
+  });
+});
+
+describe('ultimoMessaggio — cosa si manda a una sessione ripresa', () => {
+  it('è l’ultimo messaggio dell’utente, senza niente davanti', () => {
+    expect(
+      ultimoMessaggio([
+        { role: 'user', content: 'Ciao' },
+        { role: 'assistant', content: 'Buongiorno' },
+        { role: 'user', content: '/compact' },
+      ]),
+    ).toBe('/compact');
+  });
+
+  it('senza messaggi dell’utente è vuoto', () => {
+    expect(ultimoMessaggio([{ role: 'assistant', content: 'x' }])).toBe('');
   });
 });
 

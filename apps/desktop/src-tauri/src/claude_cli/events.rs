@@ -1,10 +1,10 @@
-//! Leggere quello che la CLI risponde.
+//! Tenere il conto di un turno mentre la CLI lo racconta.
 //!
-//! Con `--output-format json` la CLI stampa gli eventi del turno: i messaggi
-//! del modello con le sue chiamate agli strumenti, i risultati di quelle
-//! chiamate, e in fondo l'esito. Medea ne ricava tre cose: il testo da
-//! mostrare, gli strumenti usati — per farli vedere e per chiedere le
-//! conferme — e quanto è costato il turno.
+//! La CLI stampa un evento per riga: i messaggi del modello con le sue
+//! chiamate agli strumenti, i risultati di quelle chiamate, e in fondo
+//! l'esito. Il [`Collettore`] li riceve uno alla volta e alla fine restituisce
+//! il turno intero: il testo, gli strumenti usati — per farli vedere, per le
+//! bozze e per le conferme — quanto è costato, e la sessione da riprendere.
 
 use serde::Serialize;
 use serde_json::Value;
@@ -18,15 +18,21 @@ pub struct ClaudeCliTurn {
     pub text: String,
     pub tool_calls: Vec<CliToolCall>,
     pub usage: Option<CliUsage>,
+    /// La sessione della CLI: passandola al turno dopo, la conversazione
+    /// prosegue senza rimandare tutto da capo.
+    pub session_id: Option<String>,
 }
 
-/// Una chiamata a uno strumento di Medea fatta dalla CLI.
+/// Una chiamata a uno strumento fatta dalla CLI.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CliToolCall {
     pub id: String,
-    /// Il nome di Medea, senza il prefisso che gli mette la CLI.
+    /// Il nome di Medea senza il prefisso che gli mette la CLI; per gli
+    /// strumenti di Claude Code, il loro nome.
     pub name: String,
+    /// Vero se lo strumento è di Medea e non di Claude Code.
+    pub di_medea: bool,
     pub arguments: Value,
     /// Quello che lo strumento ha risposto, se ha risposto.
     pub output: Option<String>,
@@ -40,15 +46,16 @@ pub struct CliUsage {
     pub output: u64,
 }
 
-/// Il nome dello strumento come lo conosce Medea.
-fn nome_medea(name: &str) -> String {
-    name.strip_prefix(&format!("mcp__{SERVER_MCP}__"))
-        .unwrap_or(name)
-        .to_string()
+/// Il nome dello strumento come lo conosce Medea, e se è suo.
+pub fn nome_strumento(name: &str) -> (String, bool) {
+    match name.strip_prefix(&format!("mcp__{SERVER_MCP}__")) {
+        Some(medea) => (medea.to_string(), true),
+        None => (name.to_string(), false),
+    }
 }
 
 /// Il testo di un risultato: la CLI lo dà come stringa o come blocchi.
-fn testo_risultato(content: &Value) -> Option<String> {
+pub fn testo_risultato(content: &Value) -> Option<String> {
     match content {
         Value::String(s) => Some(s.clone()),
         Value::Array(blocchi) => {
@@ -81,28 +88,28 @@ fn uso(risultato: &Value) -> Option<CliUsage> {
     })
 }
 
-/// Legge l'uscita della CLI. L'errore è una frase da mostrare all'utente.
-pub fn parse(stdout: &str) -> Result<ClaudeCliTurn, String> {
-    let radice: Value = serde_json::from_str(stdout.trim()).map_err(|_| {
-        "La CLI `claude` ha risposto in un formato che Medea non riconosce. \
-         Aggiornala con `claude update` e riprova."
-            .to_string()
-    })?;
-    // Le versioni recenti stampano l'elenco degli eventi; le precedenti il
-    // solo esito. Valgono entrambe.
-    let eventi: Vec<Value> = match radice {
-        Value::Array(eventi) => eventi,
-        altro => vec![altro],
-    };
+/// Riceve gli eventi di un turno e ne tiene il conto.
+#[derive(Debug, Default)]
+pub struct Collettore {
+    tool_calls: Vec<CliToolCall>,
+    session_id: Option<String>,
+    risultato: Option<Value>,
+}
 
-    let mut tool_calls: Vec<CliToolCall> = Vec::new();
-    for evento in &eventi {
+impl Collettore {
+    pub fn evento(&mut self, evento: &Value) {
+        if let Some(id) = evento["session_id"].as_str().filter(|s| !s.is_empty()) {
+            self.session_id = Some(id.to_string());
+        }
         match evento["type"].as_str() {
             Some("assistant") => {
                 for blocco in blocchi(evento).filter(|b| b["type"] == "tool_use") {
-                    tool_calls.push(CliToolCall {
+                    let (name, di_medea) =
+                        nome_strumento(blocco["name"].as_str().unwrap_or_default());
+                    self.tool_calls.push(CliToolCall {
                         id: blocco["id"].as_str().unwrap_or_default().to_string(),
-                        name: nome_medea(blocco["name"].as_str().unwrap_or_default()),
+                        name,
+                        di_medea,
                         arguments: blocco.get("input").cloned().unwrap_or(Value::Null),
                         output: None,
                         is_error: false,
@@ -112,39 +119,47 @@ pub fn parse(stdout: &str) -> Result<ClaudeCliTurn, String> {
             Some("user") => {
                 for blocco in blocchi(evento).filter(|b| b["type"] == "tool_result") {
                     let id = blocco["tool_use_id"].as_str().unwrap_or_default();
-                    if let Some(call) = tool_calls.iter_mut().find(|c| c.id == id) {
+                    if let Some(call) = self.tool_calls.iter_mut().find(|c| c.id == id) {
                         call.output = testo_risultato(&blocco["content"]);
                         call.is_error = blocco["is_error"].as_bool().unwrap_or(false);
                     }
                 }
             }
+            Some("result") => self.risultato = Some(evento.clone()),
             _ => {}
         }
     }
 
-    let risultato = eventi
-        .iter()
-        .rev()
-        .find(|e| e["type"] == "result")
-        .ok_or_else(|| "La CLI `claude` si è chiusa senza dare un esito.".to_string())?;
-    let text = risultato["result"].as_str().unwrap_or_default().trim();
-
-    if risultato["is_error"].as_bool().unwrap_or(false) {
-        return Err(if text.is_empty() {
-            format!(
-                "La CLI `claude` ha segnalato un errore ({}).",
-                risultato["subtype"].as_str().unwrap_or("sconosciuto")
-            )
-        } else {
-            format!("La CLI `claude` ha segnalato un errore: {text}")
-        });
+    /// Vero quando la CLI ha dato l'esito: il turno è finito.
+    pub fn finito(&self) -> bool {
+        self.risultato.is_some()
     }
 
-    Ok(ClaudeCliTurn {
-        text: text.to_string(),
-        tool_calls,
-        usage: uso(risultato),
-    })
+    /// Il turno intero. L'errore è una frase da mostrare all'utente.
+    pub fn fine(self) -> Result<ClaudeCliTurn, String> {
+        let risultato = self
+            .risultato
+            .ok_or_else(|| "La CLI `claude` si è chiusa senza dare un esito.".to_string())?;
+        let text = risultato["result"].as_str().unwrap_or_default().trim();
+
+        if risultato["is_error"].as_bool().unwrap_or(false) {
+            return Err(if text.is_empty() {
+                format!(
+                    "La CLI `claude` ha segnalato un errore ({}).",
+                    risultato["subtype"].as_str().unwrap_or("sconosciuto")
+                )
+            } else {
+                format!("La CLI `claude` ha segnalato un errore: {text}")
+            });
+        }
+
+        Ok(ClaudeCliTurn {
+            text: text.to_string(),
+            tool_calls: self.tool_calls,
+            usage: uso(&risultato),
+            session_id: self.session_id,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -152,65 +167,77 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    /// La forma vera di un turno, presa dalla CLI 2.1.296 l'11 ottobre 2026 e
-    /// ridotta ai campi che contano: una lettura riuscita, poi uno strumento
-    /// negato dai permessi.
-    fn turno_vero() -> String {
-        json!([
-            { "type": "system", "subtype": "init", "tools": ["mcp__medea__datetime"] },
-            { "type": "assistant", "message": { "content": [
-                { "type": "tool_use", "id": "toolu_01", "name": "mcp__medea__datetime",
-                  "input": {}, "caller": { "type": "direct" } }
-            ] } },
-            { "type": "user", "message": { "content": [
+    fn raccogli(eventi: &[Value]) -> Result<ClaudeCliTurn, String> {
+        let mut c = Collettore::default();
+        for e in eventi {
+            c.evento(e);
+        }
+        c.fine()
+    }
+
+    /// La forma vera di un turno, presa dalla CLI 2.1.296 e ridotta ai campi
+    /// che contano: uno strumento di Medea, uno di Claude Code negato.
+    fn turno_vero() -> Vec<Value> {
+        vec![
+            json!({ "type": "system", "subtype": "init", "session_id": "sess-1" }),
+            json!({ "type": "assistant", "message": { "content": [
+                { "type": "tool_use", "id": "toolu_01", "name": "mcp__medea__datetime", "input": {} }
+            ] } }),
+            json!({ "type": "user", "message": { "content": [
                 { "tool_use_id": "toolu_01", "type": "tool_result",
                   "content": [{ "type": "text", "text": "{\"date\":\"2026-10-11\"}" }] }
-            ] } },
-            { "type": "assistant", "message": { "content": [
-                { "type": "tool_use", "id": "toolu_02", "name": "mcp__medea__note_add",
-                  "input": { "text": "prova" }, "caller": { "type": "direct" } }
-            ] } },
-            { "type": "user", "message": { "content": [
-                { "type": "tool_result", "content": "Permission to use mcp__medea__note_add has been denied",
+            ] } }),
+            json!({ "type": "assistant", "message": { "content": [
+                { "type": "tool_use", "id": "toolu_02", "name": "Bash",
+                  "input": { "command": "echo x > due.txt" } }
+            ] } }),
+            json!({ "type": "user", "message": { "content": [
+                { "type": "tool_result", "content": "L'utente ha negato il permesso.",
                   "is_error": true, "tool_use_id": "toolu_02" }
-            ] } },
-            { "type": "rate_limit_event" },
-            { "type": "assistant", "message": { "content": [
-                { "type": "text", "text": "Oggi è l'11 ottobre." }
-            ] } },
-            { "type": "result", "subtype": "success", "is_error": false,
-              "result": "Oggi è l'11 ottobre.\n",
-              "usage": { "input_tokens": 4, "cache_creation_input_tokens": 472,
-                         "cache_read_input_tokens": 27822, "output_tokens": 213 } }
-        ])
-        .to_string()
+            ] } }),
+            json!({ "type": "rate_limit_event" }),
+            json!({ "type": "result", "subtype": "success", "is_error": false,
+                    "session_id": "sess-1", "result": "Oggi è l'11 ottobre.\n",
+                    "usage": { "input_tokens": 4, "cache_creation_input_tokens": 472,
+                               "cache_read_input_tokens": 27822, "output_tokens": 213 } }),
+        ]
     }
 
     #[test]
     fn il_testo_e_quello_dell_esito() {
-        let turno = parse(&turno_vero()).expect("un turno");
-        assert_eq!(turno.text, "Oggi è l'11 ottobre.");
+        assert_eq!(
+            raccogli(&turno_vero()).expect("un turno").text,
+            "Oggi è l'11 ottobre."
+        );
     }
 
     #[test]
-    fn le_chiamate_portano_il_nome_di_medea_e_il_loro_risultato() {
-        let turno = parse(&turno_vero()).expect("un turno");
+    fn le_chiamate_dicono_di_chi_e_lo_strumento_e_cosa_ha_risposto() {
+        let turno = raccogli(&turno_vero()).expect("un turno");
         assert_eq!(turno.tool_calls.len(), 2);
 
-        let lettura = &turno.tool_calls[0];
-        assert_eq!(lettura.name, "datetime");
-        assert_eq!(lettura.output.as_deref(), Some("{\"date\":\"2026-10-11\"}"));
-        assert!(!lettura.is_error);
+        let medea = &turno.tool_calls[0];
+        assert_eq!(medea.name, "datetime");
+        assert!(medea.di_medea);
+        assert_eq!(medea.output.as_deref(), Some("{\"date\":\"2026-10-11\"}"));
+        assert!(!medea.is_error);
 
-        let negata = &turno.tool_calls[1];
-        assert_eq!(negata.name, "note_add");
-        assert_eq!(negata.arguments, json!({ "text": "prova" }));
-        assert!(negata.is_error);
+        let bash = &turno.tool_calls[1];
+        assert_eq!(bash.name, "Bash");
+        assert!(!bash.di_medea);
+        assert_eq!(bash.arguments, json!({ "command": "echo x > due.txt" }));
+        assert!(bash.is_error);
+    }
+
+    #[test]
+    fn la_sessione_torna_indietro_per_poterla_riprendere() {
+        let turno = raccogli(&turno_vero()).expect("un turno");
+        assert_eq!(turno.session_id.as_deref(), Some("sess-1"));
     }
 
     #[test]
     fn il_costo_conta_anche_i_token_presi_dalla_cache() {
-        let turno = parse(&turno_vero()).expect("un turno");
+        let turno = raccogli(&turno_vero()).expect("un turno");
         assert_eq!(
             turno.usage,
             Some(CliUsage {
@@ -221,54 +248,52 @@ mod tests {
     }
 
     #[test]
+    fn il_turno_e_finito_solo_quando_arriva_l_esito() {
+        let eventi = turno_vero();
+        let mut c = Collettore::default();
+        for e in &eventi[..eventi.len() - 1] {
+            c.evento(e);
+            assert!(!c.finito());
+        }
+        c.evento(&eventi[eventi.len() - 1]);
+        assert!(c.finito());
+    }
+
+    #[test]
     fn un_esito_di_errore_diventa_un_errore_con_le_parole_della_cli() {
-        let uscita = json!([{ "type": "result", "subtype": "error_during_execution",
-                              "is_error": true, "result": "Please run /login" }])
-        .to_string();
-        let errore = parse(&uscita).expect_err("un errore");
+        let errore = raccogli(&[
+            json!({ "type": "result", "subtype": "error_during_execution",
+                                        "is_error": true, "result": "Please run /login" }),
+        ])
+        .expect_err("un errore");
         assert!(errore.contains("Please run /login"));
     }
 
     #[test]
     fn un_errore_senza_parole_dice_almeno_di_che_tipo() {
-        let uscita = json!([{ "type": "result", "subtype": "error_max_turns", "is_error": true }])
-            .to_string();
-        let errore = parse(&uscita).expect_err("un errore");
+        let errore = raccogli(&[
+            json!({ "type": "result", "subtype": "error_max_turns", "is_error": true }),
+        ])
+        .expect_err("un errore");
         assert!(errore.contains("error_max_turns"));
     }
 
     #[test]
-    fn vale_anche_il_solo_esito_delle_versioni_precedenti() {
-        let uscita = json!({ "type": "result", "is_error": false, "result": "Ciao" }).to_string();
-        let turno = parse(&uscita).expect("un turno");
-        assert_eq!(turno.text, "Ciao");
-        assert!(turno.tool_calls.is_empty());
-        assert_eq!(turno.usage, None);
+    fn senza_esito_il_turno_e_un_errore() {
+        assert!(raccogli(&[json!({ "type": "system", "subtype": "init" })]).is_err());
     }
 
     #[test]
-    fn un_uscita_che_non_e_json_suggerisce_di_aggiornare_la_cli() {
-        let errore = parse("Ciao, sono testo libero").expect_err("un errore");
-        assert!(errore.contains("claude update"));
-    }
-
-    #[test]
-    fn un_elenco_senza_esito_e_un_errore() {
-        let uscita = json!([{ "type": "system", "subtype": "init" }]).to_string();
-        assert!(parse(&uscita).is_err());
-    }
-
-    #[test]
-    fn uno_strumento_che_non_e_di_medea_tiene_il_suo_nome() {
-        let uscita = json!([
-            { "type": "assistant", "message": { "content": [
-                { "type": "tool_use", "id": "t1", "name": "AltroStrumento", "input": {} }
-            ] } },
-            { "type": "result", "is_error": false, "result": "ok" }
-        ])
-        .to_string();
-        let turno = parse(&uscita).expect("un turno");
-        assert_eq!(turno.tool_calls[0].name, "AltroStrumento");
-        assert_eq!(turno.tool_calls[0].output, None);
+    fn un_risultato_puo_essere_una_stringa_o_dei_blocchi() {
+        assert_eq!(testo_risultato(&json!("ciao")).as_deref(), Some("ciao"));
+        assert_eq!(
+            testo_risultato(
+                &json!([{ "type": "text", "text": "a" }, { "type": "image" },
+                                    { "type": "text", "text": "b" }])
+            )
+            .as_deref(),
+            Some("a\nb")
+        );
+        assert_eq!(testo_risultato(&json!(null)), None);
     }
 }

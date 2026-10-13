@@ -54,9 +54,19 @@ pub fn initialize_result() -> Value {
     })
 }
 
+/// Vero se lo strumento è uno di quelli web di Medea.
+///
+/// Alla CLI lanciata da Medea non si offrono: Claude Code ha i suoi, con le
+/// sue conferme. I nostri arriverebbero come doppioni, e — già permessi in
+/// blocco insieme agli altri di Medea — aprirebbero pagine senza chiedere.
+fn web_di_medea(name: &str) -> bool {
+    name.starts_with("web_")
+}
+
 pub fn tools_list(consenso: Consenso) -> Value {
     let tools: Vec<Value> = ai_tools::registry()
         .into_iter()
+        .filter(|t| !(consenso == Consenso::DellApp && web_di_medea(&t.name)))
         .map(|t| {
             let note = match (t.kind.as_str(), consenso) {
                 ("sensitive", Consenso::DellApp) => {
@@ -141,6 +151,15 @@ pub fn handle_call(consenso: Consenso, id: Option<Value>, params: &Value) -> Val
 
     if dell_app && kind.as_deref() == Some("sensitive") {
         return ok(Some(id), contenuto(CONSENSO_RICHIESTO.to_string(), false));
+    }
+    if dell_app && web_di_medea(name) {
+        return ok(
+            Some(id),
+            contenuto(
+                "Per il web usa gli strumenti di Claude Code: WebSearch e WebFetch.".to_string(),
+                true,
+            ),
+        );
     }
 
     match ai_tools::execute(name, &args) {

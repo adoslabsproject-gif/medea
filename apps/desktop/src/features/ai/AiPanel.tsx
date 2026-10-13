@@ -7,7 +7,14 @@ import { Markdown } from '../shared/markdown';
 
 import styles from './AiPanel.module.css';
 import { aiApi } from './api';
-import { leggiTurnoCli, promptPerCli } from './claude-cli-turn';
+import { leggiTurnoCli } from './claude-cli-turn';
+import {
+  ClaudeCodeBar,
+  eseguiTurnoClaudeCode,
+  fermaTurnoClaudeCode,
+  SlashMenu,
+} from './claude-code';
+import { cadenzato } from './claude-code/cadenza';
 import {
   activeProvider,
   NessunProviderError,
@@ -176,6 +183,8 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
   const [userPhoto] = useState<string | null>(() => localStorage.getItem('medea.profile.photo.v1'));
 
   const sitiApprovati = useRef(new SitiApprovati());
+  /** Lo strumento che Claude Code sta usando in questo momento. */
+  const [attivita, setAttivita] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -592,6 +601,8 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     history: ChatTurn[];
     /** La conversazione del turno: i siti approvati valgono dentro quella. */
     conversationId: string | null;
+    /** Riceve il testo scritto finora, quando il provider lo dà a pezzi. */
+    onParziale?: (testo: string) => void;
   }): Promise<{ finalText: string; trace: ToolCallResult[]; proposals: Proposal[] }> {
     const proposals: Proposal[] = [];
     // Una ricerca sul web è fatta di più passi — cerca, apri, apri ancora —
@@ -653,10 +664,15 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
     // di Medea via MCP. Il turno arriva a cose fatte, e a Medea restano le due
     // cose che la CLI non può fare: mostrare le bozze e chiedere le conferme.
     if (provider === 'claude-cli') {
-      const turno = await aiApi.claudeCliRun({
-        prompt: promptPerCli(history),
+      const turno = await eseguiTurnoClaudeCode({
+        conversationId: opts.conversationId,
+        history,
         systemPrompt: opts.systemPrompt,
-        allowTools: true,
+        // Il testo scorre nel pannello mentre viene scritto.
+        ...(opts.onParziale ? { onTesto: opts.onParziale } : {}),
+        onStrumento: setAttivita,
+        // Comandi, scritture e modifiche di file partono solo dopo il sì.
+        chiediPermesso: askConsent,
       });
       const letto = leggiTurnoCli(turno, toolRegistry);
       trace.push(...letto.eseguiti);
@@ -784,6 +800,9 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
         systemPrompt: buildSystemPrompt(liveContext, attachContext),
         history: nextHistory.map(toChatTurn),
         conversationId: conv.id,
+        onParziale: cadenzato((testo: string) => {
+          setMessagesForConv(conv.id, [...nextHistory, { ...placeholder, content: testo }]);
+        }, 120),
       });
       setLastTrace(trace);
 
@@ -807,6 +826,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
       setMessagesForConv(conv.id, nextHistory);
     } finally {
       setStreaming(false);
+      setAttivita(null);
     }
   }
 
@@ -829,6 +849,9 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
         systemPrompt: buildSystemPrompt(liveContext, ''),
         history: base.map(toChatTurn),
         conversationId: active.id,
+        onParziale: cadenzato((testo: string) => {
+          setMessagesForConv(active.id, [...base, { ...placeholder, content: testo }]);
+        }, 120),
       });
       setLastTrace(trace);
       const clean = stripMemoryMarkers(finalText);
@@ -847,6 +870,7 @@ export function AiPanel({ account, activeMessage, onClose }: Props) {
       setActiveMessages(base);
     } finally {
       setStreaming(false);
+      setAttivita(null);
     }
   }
 
@@ -1168,9 +1192,11 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
               </span>
               <span className={styles.streamingText}>
                 {nomeAssistente} sta lavorando —{' '}
-                {lastTrace.length > 0
-                  ? `${lastTrace.length.toString()} chiamate tool eseguite`
-                  : 'analisi del contesto…'}
+                {attivita
+                  ? `sta usando ${attivita}…`
+                  : lastTrace.length > 0
+                    ? `${lastTrace.length.toString()} chiamate tool eseguite`
+                    : 'analisi del contesto…'}
               </span>
             </div>
           )}
@@ -1211,6 +1237,24 @@ ${t.error ? 'ERROR: ' + t.error : 'result: ' + JSON.stringify(t.result, null, 2)
                 ({activeMessage.subject?.slice(0, 50) ?? 'senza oggetto'}…)
               </span>
             </label>
+          )}
+
+          {provider === 'claude-cli' && (
+            <>
+              <ClaudeCodeBar
+                inCorso={streaming}
+                onFerma={() => {
+                  void fermaTurnoClaudeCode();
+                }}
+              />
+              <SlashMenu
+                input={input}
+                onScelta={(testo) => {
+                  setInput(testo);
+                  textareaRef.current?.focus();
+                }}
+              />
+            </>
           )}
 
           <div className={styles.inputBox}>

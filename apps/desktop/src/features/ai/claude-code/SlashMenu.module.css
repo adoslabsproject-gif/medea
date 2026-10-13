@@ -1,0 +1,30 @@
+@layer features {
+  .menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0 0 var(--space-2);
+    list-style: none;
+  }
+
+  .voce {
+    font-family: var(--font-family-mono, monospace);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-primary);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+    cursor: pointer;
+  }
+
+  .voce:hover {
+    border-color: var(--color-accent-default);
+  }
+
+  .voce:focus-visible {
+    outline: 2px solid var(--color-accent-default);
+    outline-offset: 2px;
+  }
+}

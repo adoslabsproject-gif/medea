@@ -139,3 +139,37 @@ fn un_metodo_sconosciuto_e_una_riga_illeggibile_sono_errori_di_protocollo() {
     let illeggibile = handle_line(Consenso::DelClient, "{non json").expect("una risposta");
     assert_eq!(illeggibile["error"]["code"], json!(-32700));
 }
+
+/// Gli strumenti web di Medea sono permessi in blocco insieme agli altri:
+/// offerti alla CLI aprirebbero pagine senza la conferma sito per sito, che
+/// vive nel pannello. Lì la CLI usa i suoi, che chiedono il permesso.
+#[test]
+fn alla_cli_lanciata_da_medea_non_si_offrono_gli_strumenti_web_di_medea() {
+    let nomi = |consenso| -> Vec<String> {
+        tools_list(consenso)["tools"]
+            .as_array()
+            .expect("elenco")
+            .iter()
+            .map(|t| t["name"].as_str().expect("nome").to_string())
+            .collect()
+    };
+    assert!(nomi(Consenso::DelClient).contains(&"web_fetch".to_string()));
+    assert!(nomi(Consenso::DelClient).contains(&"web_search".to_string()));
+    assert!(!nomi(Consenso::DellApp)
+        .iter()
+        .any(|n| n.starts_with("web_")));
+}
+
+/// Togliere uno strumento dall'elenco non basta: un modello può chiamarlo lo
+/// stesso, per nome. Va rifiutato anche alla chiamata, prima di qualunque
+/// richiesta di rete.
+#[test]
+fn chiamato_per_nome_dalla_cli_di_medea_uno_strumento_web_viene_rifiutato() {
+    let risposta = handle_call(
+        Consenso::DellApp,
+        Some(json!(1)),
+        &json!({ "name": "web_fetch", "arguments": { "url": "https://example.com/" } }),
+    );
+    assert_eq!(risposta["result"]["isError"], json!(true));
+    assert!(testo(&risposta).contains("WebFetch"));
+}

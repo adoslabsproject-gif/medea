@@ -27,6 +27,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -122,7 +123,10 @@ pub fn run() {
             db_cmd::db_list_all_documents,
             // Claude in abbonamento (CLI locale + tool via MCP)
             claude_cli_cmd::claude_cli_status,
-            claude_cli_cmd::claude_cli_run,
+            claude_cli_cmd::claude_code_turno,
+            claude_cli_cmd::claude_code_permesso,
+            claude_cli_cmd::claude_code_ferma,
+            claude_cli_cmd::claude_code_scegli_cartella,
             // Template email (carta intestata)
             template_cmd::db_template_list,
             template_cmd::db_template_default,

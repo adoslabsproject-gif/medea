@@ -18,6 +18,8 @@ import type { ChatTurn, TokenUsage } from './types';
 export interface ClaudeCliToolCall {
   id: string;
   name: string;
+  /** Vero se lo strumento è di Medea e non di Claude Code. */
+  diMedea: boolean;
   arguments: unknown;
   /** Quello che lo strumento ha risposto alla CLI, se ha risposto. */
   output: string | null;
@@ -28,6 +30,8 @@ export interface ClaudeCliTurn {
   text: string;
   toolCalls: ClaudeCliToolCall[];
   usage: TokenUsage | null;
+  /** La sessione della CLI, da riprendere al turno dopo. */
+  sessionId: string | null;
 }
 
 export interface TurnoCliLetto {
@@ -78,7 +82,10 @@ export function leggiTurnoCli(
       name: origine.name,
       args: isRecord(origine.arguments) ? origine.arguments : {},
     };
-    const kind = registry.find((t) => t.name === origine.name)?.kind;
+    // Solo gli strumenti di Medea hanno una specie. Quelli di Claude Code li
+    // ha già eseguiti — o si è visto negare — la CLI: qui si mostrano e basta,
+    // anche se uno portasse lo stesso nome di uno strumento di Medea.
+    const kind = origine.diMedea ? registry.find((t) => t.name === origine.name)?.kind : undefined;
 
     if (kind === 'sensitive') {
       letto.daConfermare.push(call);
@@ -105,4 +112,15 @@ export function promptPerCli(history: readonly Pick<ChatTurn, 'role' | 'content'
     .filter((t) => t.role === 'user' || t.role === 'assistant')
     .map((t) => `${t.role === 'user' ? 'Utente' : 'Assistente'}: ${t.content}`)
     .join('\n\n');
+}
+
+/**
+ * L'ultimo messaggio dell'utente, così com'è.
+ *
+ * È quello che si manda quando la CLI riprende una sessione: il resto della
+ * conversazione lo ha già. E va mandato senza «Utente:» davanti, perché un
+ * comando come `/compact` è tale solo in testa al messaggio.
+ */
+export function ultimoMessaggio(history: readonly Pick<ChatTurn, 'role' | 'content'>[]): string {
+  return history.filter((t) => t.role === 'user').at(-1)?.content ?? '';
 }

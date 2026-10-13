@@ -85,6 +85,9 @@ tokio-tungstenite = { version = "0.29.0", features = ["native-tls"] }
 scraper = "0.27.0"
 url = "2.5.8"
 encoding_rs = "0.8.35"
+# Solo per la finestra «scegli cartella» di Claude Code, aperta da Rust: il
+# frontend non riceve nessun permesso sul filesystem.
+tauri-plugin-dialog = "2"
 
 [features]
 default = ["custom-protocol"]
