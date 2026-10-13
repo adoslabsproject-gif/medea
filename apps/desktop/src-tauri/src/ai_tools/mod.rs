@@ -26,6 +26,7 @@ pub mod tools_email;
 pub mod tools_notes;
 pub mod tools_output;
 pub mod tools_write;
+pub mod web;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -64,6 +65,18 @@ pub fn registry() -> Vec<ToolDescriptor> {
         t("system_status", "read",
           "Stato del sistema Medea: versione, schema DB, conteggi record, ultimo sync IMAP.",
           obj(json!({}), &[]), json!({})),
+
+        // ── web ─────────────────────────────────────────────────────────────
+        // `fetch` è una specie a sé: aprire una pagina manda fuori un
+        // indirizzo scelto dal modello, e l'utente lo conferma sito per sito.
+        t("web_search", "read",
+          "Cerca sul web e restituisce titoli, indirizzi ed estratti dei risultati. Usalo per informazioni che non stanno nella posta né nei dati dell'utente.",
+          obj(json!({ "query": {"type":"string"}, "count": {"type":"integer"} }), &["query"]),
+          json!({ "query": "orari apertura agenzia entrate bari", "count": 5 })),
+        t("web_fetch", "fetch",
+          "Apre una pagina web pubblica e ne restituisce il testo. Serve l'indirizzo completo, di solito preso da web_search.",
+          obj(json!({ "url": {"type":"string"}, "max_chars": {"type":"integer"} }), &["url"]),
+          json!({ "url": "https://example.com/pagina" })),
 
         // ── email: lettura ──────────────────────────────────────────────────
         t("email_recent", "read",
@@ -408,6 +421,9 @@ pub fn execute(name: &str, args: &Value) -> Result<Value> {
     match name {
         // core
         "datetime" => tools::now(args),
+        // web
+        "web_search" => web::web_search(args),
+        "web_fetch" => web::web_fetch(args),
         "system_status" => tools_admin::medea_system_status(args),
         // email lettura
         "email_recent" => tools_email::email_recent(args),

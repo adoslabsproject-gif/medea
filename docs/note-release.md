@@ -32,7 +32,7 @@ xattr -cr /Applications/Medea.app
 ## Cosa funziona
 
 Posta via IMAP e SMTP con ricerca full-text, rubrica e anagrafiche, documenti e
-listini, promemoria, e un assistente AI con 63 strumenti che agisce davvero sul
+listini, promemoria, e un assistente AI con 65 strumenti che agisce davvero sul
 sistema — con conferma esplicita su ogni scrittura. La chiave del modello è tua
 e sta nel portachiavi del sistema operativo, non in un file di configurazione.
 

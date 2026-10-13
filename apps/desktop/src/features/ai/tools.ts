@@ -15,8 +15,9 @@ import { invoke } from '@tauri-apps/api/core';
 
 /** `read` = nessun effetto · `write` = scrive in locale ·
  *  `sensitive` = scrive e richiede conferma utente ·
- *  `proposal` = produce una card che l'utente deve confermare. */
-export type ToolKind = 'read' | 'write' | 'sensitive' | 'proposal';
+ *  `proposal` = produce una card che l'utente deve confermare ·
+ *  `fetch` = apre una pagina web: l'utente conferma il sito la prima volta. */
+export type ToolKind = 'read' | 'write' | 'sensitive' | 'proposal' | 'fetch';
 
 export interface ToolDescriptor {
   name: string;

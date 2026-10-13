@@ -24,6 +24,7 @@ import { useAccountStore } from '../mail/store/account-store';
 import type { MailAccount } from '../mail/types';
 
 import styles from './SettingsView.module.css';
+import { WebSearchSettings } from './WebSearchSettings';
 
 interface Props {
   account: MailAccount;
@@ -1199,6 +1200,8 @@ function AiKeysTab() {
           Manager / Secret Service), mai in chiaro su disco.
         </p>
       </div>
+
+      <WebSearchSettings />
     </div>
   );
 }

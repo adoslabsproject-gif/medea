@@ -160,7 +160,7 @@ esportato da Medea si importa sul server, e viceversa.
 
 ### Gli strumenti dell'assistente
 
-L'AI non è un chatbot incollato di lato: ha **63 strumenti** che agiscono davvero
+L'AI non è un chatbot incollato di lato: ha **65 strumenti** che agiscono davvero
 sul sistema. Funzionano con qualunque provider a chiave, con un endpoint
 OpenAI-compatibile e con Claude in abbonamento tramite la CLI.
 
@@ -269,7 +269,7 @@ flowchart TB
 
     subgraph CORE["Core · Rust"]
         direction LR
-        SYNC[Sync IMAP] --- SMTP[Invio SMTP] --- TOOLS[63 strumenti] --- SEC[Scanner + keychain]
+        SYNC[Sync IMAP] --- SMTP[Invio SMTP] --- TOOLS[65 strumenti] --- SEC[Scanner + keychain]
     end
 
     DB[(SQLite · FTS5<br/>15 migrazioni)]
@@ -308,7 +308,7 @@ mailer/
 │   │                        workflow (canvas · scaffold · qualità · motore)
 │   └── src-tauri/src/
 │       ├── commands/        comandi esposti alla UI
-│       ├── ai_tools/        i 63 strumenti dell'assistente
+│       ├── ai_tools/        i 65 strumenti dell'assistente
 │       ├── db/              schema, migrazioni, repository
 │       ├── security/        scanner allegati
 │       └── bin/medea_mcp.rs server MCP
@@ -370,7 +370,7 @@ e `cargo check` a ogni push.
 |     |                                                                  |
 | --- | ---------------------------------------------------------------- |
 | 🟢  | Posta: account, sync, lettura, invio, ricerca full-text          |
-| 🟢  | Assistente con 63 strumenti, conferma sulle scritture, vision    |
+| 🟢  | Assistente con 65 strumenti, conferma sulle scritture, vision    |
 | 🟢  | BYOK con portachiavi, endpoint personale, abbonamento via MCP    |
 | 🟢  | Rubrica, anagrafiche, articoli, listini, documenti               |
 | 🟢  | Template email, promemoria con notifiche, DB Studio              |
